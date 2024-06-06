@@ -1,19 +1,15 @@
-name: chronicle-rules-cicd-multi-sa
+name: chronicle-rules-cicd
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   push-rules:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        sa: [SA_CREDENTIAL_1, SA_CREDENTIAL_2]  # Add your SA secret names here
     env:
-      region: us   # Your Chronicle region
-      rules_path: backends/chronicle/yaral # Path to your YARA-L rules
-
+      region: europe # modify this to us, europe, or asia-southeast1 according to your region
+      rules_path: backends/chronicle/yaral # modify to the relative path in the root of the repository which contains rules
     steps:
       - name: Checkout repo content
         uses: actions/checkout@v2
@@ -21,21 +17,21 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
-
+          python-version: 3.7
+      
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
           if [ -f scripts/python/requirements.txt ]; then pip install -r scripts/python/requirements.txt; fi
 
-      - name: Pre-upload dry run for ${{ matrix.sa }}
+      - name: Pre-upload dry run
         run: |
-          python3 scripts/python/rules.py -e "${{ matrix.sa }}" -l $rules_path -s -r $region
+          python3 scripts/python/rules.py -i "${{ secrets.SA_CREDENTIAL }}" -l $rules_path -s -r $region
 
-      - name: Upload/update rules for ${{ matrix.sa }}
+      - name: Upload/update any rules
         run: |
-          python3 scripts/python/rules.py -e "${{ matrix.sa }}" -l $rules_path -s -r $region -m
+          python3 scripts/python/rules.py -i "${{ secrets.SA_CREDENTIAL }}" -l $rules_path -s -r $region -m
 
-      - name: Post-upload dry run for ${{ matrix.sa }}
+      - name: Post-upload dry run
         run: |
-          python3 scripts/python/rules.py -e "${{ matrix.sa }}" -l $rules_path -s -r $region
+          python3 scripts/python/rules.py -i "${{ secrets.SA_CREDENTIAL }}" -l $rules_path -s -r $region
